@@ -1,23 +1,36 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"lenslocked.com/views"
 )
+
+var homeView *views.View
+var contactView *views.View
 
 func home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "<h1>Welcome to my awesome site!</h1>")
+	must(homeView.Render(w, nil))
 }
 
 func contact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, "To get in touch, please send an email "+"to <a href=\"mailto:support@lenslocked.com\">"+"support@lenslocked.com</a>.")
+	must(contactView.Render(w, nil))
+}
+
+// A helper function that panics on any error func must(err error) {
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
+	homeView = views.NewView("bootstrap", "views/home.html")
+	contactView = views.NewView("bootstrap", "views/contact.html")
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", home)
 	r.HandleFunc("/contact", contact)
