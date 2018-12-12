@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -52,6 +53,14 @@ func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	user := context.User(r.Context())
 	galleries, err := g.gs.ByUserID(user.ID)
 	if err != nil {
+		// We could attempt to display the index page with
+		// no galleries and an error message, but that isn't
+		// really more useful than a generic error message so
+		// I didn't change this.
+		// Regardless of what page we display, we should try
+		// to make sure the error is logged so we can debug it
+		// later.
+		log.Println(err)
 		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
 		return
 	}
@@ -161,11 +170,12 @@ func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	vd.Alert = &views.Alert{
-		Level:   views.AlertLvlSuccess,
-		Message: "Images successfully uploaded!",
+	url, err := g.r.Get(EditGallery).URL("id", fmt.Sprintf("%v", gallery.ID))
+	if err != nil {
+		http.Redirect(w, r, "/galleries", http.StatusFound)
+		return
 	}
-	g.EditView.Render(w, r, vd)
+	http.Redirect(w, r, url.Path, http.StatusFound)
 }
 
 // POST /galleries/:id/images/:filename/delete
@@ -195,6 +205,7 @@ func (g *Galleries) ImageDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	url, err := g.r.Get(EditGallery).URL("id", fmt.Sprintf("%v", gallery.ID))
 	if err != nil {
+		log.Println(err)
 		http.Redirect(w, r, "/galleries", http.StatusFound)
 		return
 	}
@@ -224,7 +235,12 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	url, err := g.r.Get(EditGallery).URL("id",
 		strconv.Itoa(int(gallery.ID)))
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
+		// This error shouldn't ever happen unless our routes
+		// are messed up, but just in case I liked to fallback
+		// to redirecting a user to a hard-coded galleries
+		// index page and logging the error.
+		log.Println(err)
+		http.Redirect(w, r, "/galleries", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, url.Path, http.StatusFound)
@@ -271,6 +287,9 @@ func (g *Galleries) galleryByID(w http.ResponseWriter,
 	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
+		// This really shouldn't happen with our regex used for
+		// routes with an ID, so we should log the error.
+		log.Println(err)
 		http.Error(w, "Invalid gallery ID", http.StatusNotFound)
 		return nil, err
 	}
@@ -280,6 +299,9 @@ func (g *Galleries) galleryByID(w http.ResponseWriter,
 		case models.ErrNotFound:
 			http.Error(w, "Gallery not found", http.StatusNotFound)
 		default:
+			// If we don't get an expected error like ErrNotFound
+			// we should log it so we can look into it later.
+			log.Println(err)
 			http.Error(w, "Whoops! Something went wrong.", http.StatusInternalServerError)
 		}
 		return nil, err
