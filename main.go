@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"lenslocked.com/config"
 	"lenslocked.com/controllers"
 	"lenslocked.com/email"
 	"lenslocked.com/middleware"
@@ -17,9 +18,10 @@ import (
 
 func main() {
 	boolPtr := flag.Bool("prod", false, "Provide this flag in production. This ensures that a .config file is provided before the application starts.")
+	// parse the command line into the defined flags
 	flag.Parse()
 
-	cfg := LoadConfig(*boolPtr)
+	cfg := config.LoadConfig(*boolPtr)
 	dbCfg := cfg.Database
 	services, err := models.NewServices(
 		models.WithGorm(dbCfg.Dialect(), dbCfg.ConnectionInfo()),

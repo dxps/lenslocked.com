@@ -4,5 +4,8 @@
 # Uploaded images
 images/**
 
-vendor/
+# Don't include our binary
 app
+
+.config
+vendor/

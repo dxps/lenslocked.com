@@ -19,7 +19,7 @@ Welcome to LensLocked.com! We really hope you enjoy using
 our application!
 
 Best,
-Jon
+Max
 `
 
 const welcomeHTML = `Hi there!<br/>
@@ -28,7 +28,7 @@ Welcome to
 <a href="https://www.lenslocked.com">LensLocked.com</a>! We really hope you enjoy using our application!<br/>
 <br/>
 Best,<br/>
-Jon
+Max
 `
 
 const resetTextTmpl = `Hi there!
