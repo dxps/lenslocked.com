@@ -11,3 +11,6 @@ import:
 - package: golang.org/x/crypto
   subpackages:
   - bcrypt
+- package: github.com/gorilla/csrf
+  version: ^1.5.1
+- package: gopkg.in/mailgun/mailgun-go.v1

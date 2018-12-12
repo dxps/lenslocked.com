@@ -1,0 +1,34 @@
+hash: e2b38d3b4c12f91764f24910bb523a4a69d862dc66df62b77505e150c53d2b7d
+updated: 2018-12-12T08:46:07.484668+08:00
+imports:
+- name: github.com/gorilla/context
+  version: 51ce91d2eaddeca0ef29a71d766bb3634dadf729
+- name: github.com/gorilla/csrf
+  version: 05b4a732b984ec326cac085631060968d4706b17
+- name: github.com/gorilla/mux
+  version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
+- name: github.com/gorilla/schema
+  version: d0e4c24cff97ae983e9847e0ed5a02dc10013d41
+- name: github.com/gorilla/securecookie
+  version: e65cf8c5df817c89aeb47ecb46064e802e2de943
+- name: github.com/jinzhu/gorm
+  version: 472c70caa40267cb89fd8facb07fe6454b578626
+  subpackages:
+  - dialects/postgres
+- name: github.com/jinzhu/inflection
+  version: 04140366298a54a039076d798123ffa108fff46c
+- name: github.com/lib/pq
+  version: 9eb73efc1fcc404148b56765b0d3f61d9a5ef8ee
+  subpackages:
+  - hstore
+  - oid
+- name: github.com/pkg/errors
+  version: 059132a15dd08d6704c67711dae0cf35ab991756
+- name: golang.org/x/crypto
+  version: 505ab145d0a99da450461ae2c1a9f6cd10d1f447
+  subpackages:
+  - bcrypt
+  - blowfish
+- name: gopkg.in/mailgun/mailgun-go.v1
+  version: 28c45085c063854b83107df6cf37ad8f88462105
+testImports: []

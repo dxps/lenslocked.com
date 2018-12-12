@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"lenslocked.com/controllers"
+	"lenslocked.com/email"
 	"lenslocked.com/middleware"
 	"lenslocked.com/models"
 	"lenslocked.com/rand"
@@ -34,9 +35,15 @@ func main() {
 	defer services.Close()
 	services.AutoMigrate()
 
+	mgCfg := cfg.Mailgun
+	emailer := email.NewClient(
+		email.WithSender("Lenslocked.com Support", "support@"+mgCfg.Domain),
+		email.WithMailgun(mgCfg.Domain, mgCfg.APIKey, mgCfg.PublicAPIKey),
+	)
+
 	r := mux.NewRouter()
 	staticC := controllers.NewStatic()
-	usersC := controllers.NewUsers(services.User)
+	usersC := controllers.NewUsers(services.User, emailer)
 	galleriesC := controllers.NewGalleries(services.Gallery, services.Image, r)
 
 	userMw := middleware.User{
@@ -50,7 +57,15 @@ func main() {
 	r.HandleFunc("/signup", usersC.Create).Methods("POST")
 	r.Handle("/login", usersC.LoginView).Methods("GET")
 	r.HandleFunc("/login", usersC.Login).Methods("POST")
+	r.Handle("/logout",
+		requireUserMw.ApplyFn(usersC.Logout)).
+		Methods("POST")
+	r.Handle("/forgot", usersC.ForgotPwView).Methods("GET")
+	r.HandleFunc("/forgot", usersC.InitiateReset).Methods("POST")
+	r.HandleFunc("/reset", usersC.ResetPw).Methods("GET")
+	r.HandleFunc("/reset", usersC.CompleteReset).Methods("POST")
 	r.HandleFunc("/cookietest", usersC.CookieTest).Methods("GET")
+
 	// Gallery routes
 	r.Handle("/galleries",
 		requireUserMw.ApplyFn(galleriesC.Index)).
