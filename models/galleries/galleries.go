@@ -1,20 +1,25 @@
-package models
+package galleries
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+	"lenslocked.com/models/errors"
+	"lenslocked.com/models/images"
+	"lenslocked.com/models/users"
+)
 
 // Gallery is our image container resources that visitors
 // view
 type Gallery struct {
 	gorm.Model
-	UserID uint    `gorm:"not_null;index"`
-	Title  string  `gorm:"not_null"`
-	Images []Image `gorm:"-"`
+	UserID uint           `gorm:"not_null;index"`
+	Title  string         `gorm:"not_null"`
+	Images []images.Image `gorm:"-"`
 }
 
-func (g *Gallery) ImagesSplitN(n int) [][]Image {
-	ret := make([][]Image, n)
+func (g *Gallery) ImagesSplitN(n int) [][]images.Image {
+	ret := make([][]images.Image, n)
 	for i := 0; i < n; i++ {
-		ret[i] = make([]Image, 0)
+		ret[i] = make([]images.Image, 0)
 	}
 	for i, img := range g.Images {
 		// % is the remainder operator in Go
@@ -80,21 +85,21 @@ func (gv *galleryValidator) Update(gallery *Gallery) error {
 // Delete will delete the gallery with the provided ID
 func (gv *galleryValidator) Delete(id uint) error {
 	if id <= 0 {
-		return ErrIDInvalid
+		return errors.ErrIDInvalid
 	}
 	return gv.GalleryDB.Delete(id)
 }
 
 func (gv *galleryValidator) userIDRequired(g *Gallery) error {
 	if g.UserID <= 0 {
-		return ErrUserIDRequired
+		return errors.ErrUserIDRequired
 	}
 	return nil
 }
 
 func (gv *galleryValidator) titleRequired(g *Gallery) error {
 	if g.Title == "" {
-		return ErrTitleRequired
+		return errors.ErrTitleRequired
 	}
 	return nil
 }
@@ -108,7 +113,7 @@ type galleryGorm struct {
 func (gg *galleryGorm) ByID(id uint) (*Gallery, error) {
 	var gallery Gallery
 	db := gg.db.Where("id = ?", id)
-	err := first(db, &gallery)
+	err := users.First(db, &gallery)
 	return &gallery, err
 }
 

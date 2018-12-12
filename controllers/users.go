@@ -7,12 +7,13 @@ import (
 
 	"lenslocked.com/context"
 	"lenslocked.com/email"
-	"lenslocked.com/models"
+	"lenslocked.com/models/errors"
+	"lenslocked.com/models/users"
 	"lenslocked.com/rand"
 	"lenslocked.com/views"
 )
 
-func NewUsers(us models.UserService, emailer *email.Client) *Users {
+func NewUsers(us users.UserService, emailer *email.Client) *Users {
 	return &Users{
 		NewView:      views.NewView("bootstrap", "users/new"),
 		LoginView:    views.NewView("bootstrap", "users/login"),
@@ -28,7 +29,7 @@ type Users struct {
 	LoginView    *views.View
 	ForgotPwView *views.View
 	ResetPwView  *views.View
-	us           models.UserService
+	us           users.UserService
 	emailer      *email.Client
 }
 
@@ -62,7 +63,7 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.User{
+	user := users.User{
 		Name:     form.Name,
 		Email:    form.Email,
 		Password: form.Password,
@@ -102,7 +103,7 @@ func (u *Users) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := u.us.Authenticate(form.Email, form.Password)
 	if err != nil {
 		switch err {
-		case models.ErrNotFound:
+		case errors.ErrNotFound:
 			vd.AlertError("No user exists with that email address")
 		default:
 			vd.SetAlert(err)
@@ -243,7 +244,7 @@ func (u *Users) CookieTest(w http.ResponseWriter, r *http.Request) {
 }
 
 // signIn is used to sign the given user in via cookies
-func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
+func (u *Users) signIn(w http.ResponseWriter, user *users.User) error {
 	if user.Remember == "" {
 		token, err := rand.RememberToken()
 		if err != nil {

@@ -9,7 +9,9 @@ import (
 	"github.com/gorilla/mux"
 
 	"lenslocked.com/context"
-	"lenslocked.com/models"
+	"lenslocked.com/models/errors"
+	"lenslocked.com/models/galleries"
+	"lenslocked.com/models/images"
 	"lenslocked.com/views"
 )
 
@@ -21,8 +23,8 @@ const (
 	maxMultipartMem = 1 << 20 // 1 megabyte
 )
 
-func NewGalleries(gs models.GalleryService,
-	is models.ImageService, r *mux.Router) *Galleries {
+func NewGalleries(gs galleries.GalleryService,
+	is images.ImageService, r *mux.Router) *Galleries {
 	return &Galleries{
 		New:       views.NewView("bootstrap", "galleries/new"),
 		ShowView:  views.NewView("bootstrap", "galleries/show"),
@@ -39,8 +41,8 @@ type Galleries struct {
 	ShowView  *views.View
 	EditView  *views.View
 	IndexView *views.View
-	gs        models.GalleryService
-	is        models.ImageService
+	gs        galleries.GalleryService
+	is        images.ImageService
 	r         *mux.Router
 }
 
@@ -191,7 +193,7 @@ func (g *Galleries) ImageDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	filename := mux.Vars(r)["filename"]
-	i := models.Image{
+	i := images.Image{
 		Filename:  filename,
 		GalleryID: gallery.ID,
 	}
@@ -222,7 +224,7 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := context.User(r.Context())
-	gallery := models.Gallery{
+	gallery := galleries.Gallery{
 		Title:  form.Title,
 		UserID: user.ID,
 	}
@@ -282,7 +284,7 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 // will also render the error with an http.Error function
 // call, so you do not need to.
 func (g *Galleries) galleryByID(w http.ResponseWriter,
-	r *http.Request) (*models.Gallery, error) {
+	r *http.Request) (*galleries.Gallery, error) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
@@ -296,7 +298,7 @@ func (g *Galleries) galleryByID(w http.ResponseWriter,
 	gallery, err := g.gs.ByID(uint(id))
 	if err != nil {
 		switch err {
-		case models.ErrNotFound:
+		case errors.ErrNotFound:
 			http.Error(w, "Gallery not found", http.StatusNotFound)
 		default:
 			// If we don't get an expected error like ErrNotFound

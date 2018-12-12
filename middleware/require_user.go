@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"lenslocked.com/context"
-	"lenslocked.com/models"
+	"lenslocked.com/models/users"
 )
 
 type User struct {
-	models.UserService
+	users.UserService
 }
 
 func (mw *User) Apply(next http.Handler) http.HandlerFunc {

@@ -1,8 +1,11 @@
-package models
+package services
 
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"lenslocked.com/models/galleries"
+	"lenslocked.com/models/images"
+	"lenslocked.com/models/users"
 )
 
 type ServicesConfig func(*Services) error
@@ -38,7 +41,7 @@ func WithLogMode(mode bool) ServicesConfig {
 // to build and set a UserService.
 func WithUser(pepper, hmacKey string) ServicesConfig {
 	return func(s *Services) error {
-		s.User = NewUserService(s.db, pepper, hmacKey)
+		s.User = users.NewUserService(s.db, pepper, hmacKey)
 		return nil
 	}
 }
@@ -47,7 +50,7 @@ func WithUser(pepper, hmacKey string) ServicesConfig {
 // the Services object to build and set a GalleryService.
 func WithGallery() ServicesConfig {
 	return func(s *Services) error {
-		s.Gallery = NewGalleryService(s.db)
+		s.Gallery = galleries.NewGalleryService(s.db)
 		return nil
 	}
 }
@@ -55,7 +58,7 @@ func WithGallery() ServicesConfig {
 // WithImage will build and set an ImageService.
 func WithImage() ServicesConfig {
 	return func(s *Services) error {
-		s.Image = NewImageService()
+		s.Image = images.NewImageService()
 		return nil
 	}
 }
@@ -76,9 +79,9 @@ func NewServices(cfgs ...ServicesConfig) (*Services, error) {
 }
 
 type Services struct {
-	Gallery GalleryService
-	User    UserService
-	Image   ImageService
+	Gallery galleries.GalleryService
+	User    users.UserService
+	Image   images.ImageService
 	db      *gorm.DB
 }
 
@@ -89,12 +92,12 @@ func (s *Services) Close() error {
 
 // AutoMigrate will attempt to automatically migrate all tables
 func (s *Services) AutoMigrate() error {
-	return s.db.AutoMigrate(&User{}, &Gallery{}, &pwReset{}).Error
+	return s.db.AutoMigrate(&users.User{}, &galleries.Gallery{}, &users.PWReset{}).Error
 }
 
 // DestructiveReset drops all tables and rebuilds them
 func (s *Services) DestructiveReset() error {
-	err := s.db.DropTableIfExists(&User{}, &Gallery{}, &pwReset{}).Error
+	err := s.db.DropTableIfExists(&users.User{}, &galleries.Gallery{}, &users.PWReset{}).Error
 	if err != nil {
 		return err
 	}

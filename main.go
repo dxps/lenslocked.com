@@ -9,7 +9,7 @@ import (
 	"lenslocked.com/controllers"
 	"lenslocked.com/email"
 	"lenslocked.com/middleware"
-	"lenslocked.com/models"
+	"lenslocked.com/models/services"
 	"lenslocked.com/rand"
 
 	"github.com/gorilla/csrf"
@@ -23,12 +23,12 @@ func main() {
 
 	cfg := config.LoadConfig(*boolPtr)
 	dbCfg := cfg.Database
-	services, err := models.NewServices(
-		models.WithGorm(dbCfg.Dialect(), dbCfg.ConnectionInfo()),
-		models.WithLogMode(!cfg.IsProd()),
-		models.WithUser(cfg.Pepper, cfg.HMACKey),
-		models.WithGallery(),
-		models.WithImage(),
+	services, err := services.NewServices(
+		services.WithGorm(dbCfg.Dialect(), dbCfg.ConnectionInfo()),
+		services.WithLogMode(!cfg.IsProd()),
+		services.WithUser(cfg.Pepper, cfg.HMACKey),
+		services.WithGallery(),
+		services.WithImage(),
 	)
 	must(err)
 	defer services.Close()

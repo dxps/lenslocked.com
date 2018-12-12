@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"lenslocked.com/models"
+	"lenslocked.com/models/users"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 // to come in.
 type Data struct {
 	Alert *Alert
-	User  *models.User
+	User  *users.User
 	Yield interface{}
 }
 

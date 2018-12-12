@@ -1,4 +1,4 @@
-package models
+package users
 
 import (
 	"regexp"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"lenslocked.com/hash"
+	"lenslocked.com/models/errors"
 	"lenslocked.com/rand"
 
 	"github.com/jinzhu/gorm"
@@ -84,7 +85,7 @@ var _ UserService = &userService{}
 type userService struct {
 	UserDB
 	pepper    string
-	pwResetDB pwResetDB
+	pwResetDB PWResetDB
 }
 
 // Authenticate can be used to authenticate a user with the
@@ -107,7 +108,7 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 	if err != nil {
 		switch err {
 		case bcrypt.ErrMismatchedHashAndPassword:
-			return nil, ErrPasswordIncorrect
+			return nil, errors.ErrPasswordIncorrect
 		default:
 			return nil, err
 		}
@@ -121,7 +122,7 @@ func (us *userService) InitiateReset(email string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	pwr := pwReset{
+	pwr := PWReset{
 		UserID: user.ID,
 	}
 	if err := us.pwResetDB.Create(&pwr); err != nil {
@@ -133,13 +134,13 @@ func (us *userService) InitiateReset(email string) (string, error) {
 func (us *userService) CompleteReset(token, newPw string) (*User, error) {
 	pwr, err := us.pwResetDB.ByToken(token)
 	if err != nil {
-		if err == ErrNotFound {
-			return nil, ErrTokenInvalid
+		if err == errors.ErrNotFound {
+			return nil, errors.ErrTokenInvalid
 		}
 		return nil, err
 	}
 	if time.Now().Sub(pwr.CreatedAt) > (12 * time.Hour) {
-		return nil, ErrTokenInvalid
+		return nil, errors.ErrTokenInvalid
 	}
 	user, err := us.ByID(pwr.UserID)
 	if err != nil {
@@ -305,14 +306,14 @@ func (uv *userValidator) rememberMinBytes(user *User) error {
 		return err
 	}
 	if n < 32 {
-		return ErrRememberTooShort
+		return errors.ErrRememberTooShort
 	}
 	return nil
 }
 
 func (uv *userValidator) rememberHashRequired(user *User) error {
 	if user.RememberHash == "" {
-		return ErrRememberRequired
+		return errors.ErrRememberRequired
 	}
 	return nil
 }
@@ -320,7 +321,7 @@ func (uv *userValidator) rememberHashRequired(user *User) error {
 func (uv *userValidator) idGreaterThan(n uint) userValFunc {
 	return userValFunc(func(user *User) error {
 		if user.ID <= n {
-			return ErrIDInvalid
+			return errors.ErrIDInvalid
 		}
 		return nil
 	})
@@ -334,7 +335,7 @@ func (uv *userValidator) normalizeEmail(user *User) error {
 
 func (uv *userValidator) requireEmail(user *User) error {
 	if user.Email == "" {
-		return ErrEmailRequired
+		return errors.ErrEmailRequired
 	}
 	return nil
 }
@@ -344,14 +345,14 @@ func (uv *userValidator) emailFormat(user *User) error {
 		return nil
 	}
 	if !uv.emailRegex.MatchString(user.Email) {
-		return ErrEmailInvalid
+		return errors.ErrEmailInvalid
 	}
 	return nil
 }
 
 func (uv *userValidator) emailIsAvail(user *User) error {
 	existing, err := uv.ByEmail(user.Email)
-	if err == ErrNotFound {
+	if err == errors.ErrNotFound {
 		// Email address is not taken
 		return nil
 	}
@@ -363,7 +364,7 @@ func (uv *userValidator) emailIsAvail(user *User) error {
 	// If the found user has the same ID as this user, it is
 	// an update and this is the same user.
 	if user.ID != existing.ID {
-		return ErrEmailTaken
+		return errors.ErrEmailTaken
 	}
 	return nil
 }
@@ -373,21 +374,21 @@ func (uv *userValidator) passwordMinLength(user *User) error {
 		return nil
 	}
 	if len(user.Password) < 8 {
-		return ErrPasswordTooShort
+		return errors.ErrPasswordTooShort
 	}
 	return nil
 }
 
 func (uv *userValidator) passwordRequired(user *User) error {
 	if user.Password == "" {
-		return ErrPasswordRequired
+		return errors.ErrPasswordRequired
 	}
 	return nil
 }
 
 func (uv *userValidator) passwordHashRequired(user *User) error {
 	if user.PasswordHash == "" {
-		return ErrPasswordRequired
+		return errors.ErrPasswordRequired
 	}
 	return nil
 }
@@ -410,7 +411,7 @@ type userGorm struct {
 func (ug *userGorm) ByID(id uint) (*User, error) {
 	var user User
 	db := ug.db.Where("id = ?", id)
-	err := first(db, &user)
+	err := First(db, &user)
 	return &user, err
 }
 
@@ -427,7 +428,7 @@ func (ug *userGorm) ByID(id uint) (*User, error) {
 func (ug *userGorm) ByEmail(email string) (*User, error) {
 	var user User
 	db := ug.db.Where("email = ?", email)
-	err := first(db, &user)
+	err := First(db, &user)
 	return &user, err
 }
 
@@ -437,7 +438,7 @@ func (ug *userGorm) ByEmail(email string) (*User, error) {
 // Errors are the same as ByEmail.
 func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 	var user User
-	err := first(ug.db.Where("remember_hash = ?", rememberHash), &user)
+	err := First(ug.db.Where("remember_hash = ?", rememberHash), &user)
 	if err != nil {
 		return nil, err
 	}
@@ -465,10 +466,10 @@ func (ug *userGorm) Delete(id uint) error {
 // first will query using the provided gorm.DB and it will
 // get the first item returned and place it into dst. If
 // nothing is found in the query, it will return ErrNotFound
-func first(db *gorm.DB, dst interface{}) error {
+func First(db *gorm.DB, dst interface{}) error {
 	err := db.First(dst).Error
 	if err == gorm.ErrRecordNotFound {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 	return err
 }
